@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — 22 Contextos Geológicos de Chile</title>
+  <meta name="description" content="Dashboard de gestión y visualización de los 22 Contextos Geológicos de Chile (Mourgues 2012/2016 según lista Gálvez 2024). Suite Geopatrimonio." />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header>
+    <div class="header-brand">
+      <div class="header-logo">22</div>
+      <div>
+        <div class="header-title">Contextos Geológicos de Chile</div>
+        <div class="header-subtitle">Mourgues 2012/2016 · Gálvez 2024 · Suite Geopatrimonio</div>
+      </div>
+    </div>
+    <span class="header-badge">v1.0.0</span>
+  </header>
+
+  <!-- ── Tab bar ────────────────────────────────────────── -->
+  <nav class="tab-bar" role="tablist" aria-label="Secciones del dashboard">
+    <button class="tab-btn active" data-tab="inventario" role="tab" aria-selected="true">
+      <span class="tab-icon">📋</span> Inventario
+    </button>
+    <button class="tab-btn" data-tab="cobertura" role="tab" aria-selected="false">
+      <span class="tab-icon">📊</span> Cobertura
+    </button>
+    <button class="tab-btn" data-tab="mapa" role="tab" aria-selected="false">
+      <span class="tab-icon">🗺</span> Mapa
+    </button>
+    <button class="tab-btn" data-tab="acerca" role="tab" aria-selected="false">
+      <span class="tab-icon">ℹ</span> Acerca
+    </button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════
+       TAB 1 — INVENTARIO
+  ════════════════════════════════════════════════════ -->
+  <section id="tab-inventario" class="tab-content active" role="tabpanel">
+    <div class="container">
+      <p class="page-title">Inventario de Contextos</p>
+      <p class="page-sub">Los 22 contextos geológicos definidos para Chile según Mourgues (2012, 2016) y listado Gálvez (2024).</p>
+
+      <div class="toolbar">
+        <input
+          id="buscador"
+          class="search-box"
+          type="search"
+          placeholder="Buscar por código, nombre, región o fuente…"
+          aria-label="Buscar contextos"
+        />
+        <select id="filtro-estado" class="filter-select" aria-label="Filtrar por estado">
+          <option value="">Todos los estados</option>
+          <option value="completo">Completo</option>
+          <option value="parcial">Parcial</option>
+          <option value="pendiente">Pendiente</option>
+        </select>
+        <select id="filtro-fuente" class="filter-select" aria-label="Filtrar por fuente">
+          <option value="">Todas las fuentes</option>
+          <option value="Mourgues 2012">Mourgues 2012</option>
+          <option value="Mourgues 2016">Mourgues 2016</option>
+          <option value="Gálvez 2024">Gálvez 2024</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table aria-label="Tabla de contextos geológicos">
+          <thead>
+            <tr>
+              <th data-col="codigo">Código <span class="sort-icon">↕</span></th>
+              <th data-col="nombre">Nombre <span class="sort-icon">↕</span></th>
+              <th data-col="region">Región geográfica <span class="sort-icon">↕</span></th>
+              <th data-col="geositios">Geositios <span class="sort-icon">↕</span></th>
+              <th data-col="estado">Estado doc. <span class="sort-icon">↕</span></th>
+              <th data-col="fuente">Fuente principal <span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
+        <div class="table-count" id="tabla-count" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════
+       TAB 2 — COBERTURA
+  ════════════════════════════════════════════════════ -->
+  <section id="tab-cobertura" class="tab-content" role="tabpanel">
+    <div class="container">
+      <p class="page-title">Cobertura y Estadísticas</p>
+      <p class="page-sub">Distribución de geositios vinculados y estado de documentación por contexto.</p>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total contextos</div>
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-sub">Clasificados Mourgues/Gálvez</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cobertura activa</div>
+          <div class="stat-value" id="stat-cubiertos">—</div>
+          <div class="stat-sub">Completo o parcial</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total geositios</div>
+          <div class="stat-value" id="stat-geositios">—</div>
+          <div class="stat-sub">Geositios vinculados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Documentación completa</div>
+          <div class="stat-value" id="stat-completos">—</div>
+          <div class="stat-sub">Contextos completamente doc.</div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Geositios vinculados por contexto</div>
+          <div class="chart-wrapper chart-wrapper-bar">
+            <canvas id="chart-barras"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Estado de documentación</div>
+          <div class="chart-wrapper chart-wrapper-dona">
+            <canvas id="chart-dona"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════
+       TAB 3 — MAPA
+  ════════════════════════════════════════════════════ -->
+  <section id="tab-mapa" class="tab-content" role="tabpanel">
+    <div class="container">
+      <p class="page-title">Distribución Geográfica</p>
+      <p class="page-sub">Localización representativa de los 22 contextos. Haz clic en un marcador para ver el detalle.</p>
+
+      <div class="map-legend">
+        <span class="legend-label">Estado:</span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#5fb878;"></span> Completo
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#e67e22;"></span> Parcial
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#c0392b;"></span> Pendiente
+        </span>
+      </div>
+
+      <div id="map" aria-label="Mapa de contextos geológicos de Chile"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════
+       TAB 4 — ACERCA
+  ════════════════════════════════════════════════════ -->
+  <section id="tab-acerca" class="tab-content" role="tabpanel">
+    <div class="container">
+      <p class="page-title">Acerca del Dashboard</p>
+      <p class="page-sub">Información del proyecto, fuentes y enlaces a la Suite Geopatrimonio.</p>
+
+      <div class="about-grid">
+        <div>
+          <div class="about-card" style="margin-bottom:1.25rem;">
+            <h2>¿Qué es este dashboard?</h2>
+            <p>
+              Esta herramienta forma parte de la <strong>Suite Geopatrimonio</strong>, un conjunto de aplicaciones
+              web orientadas a la documentación, visualización y gestión del patrimonio geológico de Chile.
+            </p>
+            <p>
+              El dashboard centraliza los <strong>22 Contextos Geológicos de Chile</strong> definidos por Mourgues
+              (2012, 2016) y listados en Gálvez (2024), permitiendo consultar su distribución geográfica,
+              estado de documentación y geositios oficiales asociados.
+            </p>
+            <p>
+              Cada contexto representa una unidad geológica-geográfica mayor que agrupa geositios con
+              características genéticas y estratigráficas comunes, constituyendo el marco de referencia
+              para el Inventario Nacional de Patrimonio Geológico de Chile.
+            </p>
+            <span class="version-badge">Dashboard v1.0.0 · Abril 2026</span>
+          </div>
+
+          <div class="about-card">
+            <h2>Referencias bibliográficas</h2>
+            <ul class="refs-list">
+              <li>
+                Mourgues, F.A. (2012). <em>Marco de referencia para el Inventario Nacional del Patrimonio
+                Geológico de Chile: contextos geológicos y geositios.</em> Servicio Nacional de Geología y
+                Minería, Chile.
+              </li>
+              <li>
+                Mourgues, F.A. (2016). <em>Actualización de contextos geológicos y criterios de
+                selección de geositios para Chile.</em> Servicio Nacional de Geología y Minería, Chile.
+              </li>
+              <li>
+                Gálvez, N. (2024). <em>Lista revisada de contextos geológicos para el Inventario
+                Nacional de Patrimonio Geológico de Chile.</em> Documento de trabajo, SERNAGEOMIN.
+              </li>
+              <li>
+                Inventario Nacional de Patrimonio Geológico de Chile — SERNAGEOMIN,
+                <a href="https://www.sernageomin.cl" target="_blank" rel="noopener noreferrer"
+                   style="color:var(--accent-2);">www.sernageomin.cl</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div>
+          <div class="about-card" style="margin-bottom:1.25rem;">
+            <h2>Suite Geopatrimonio</h2>
+            <p style="margin-bottom:1rem;">Módulos del ecosistema:</p>
+            <ul class="suite-links">
+              <li>
+                <a href="../contextos-geologicos/index.html" rel="noopener">
+                  <span class="link-icon">🌐</span>
+                  <span>
+                    <strong>Contextos Geológicos</strong><br>
+                    <span style="font-size:0.75rem;opacity:0.7;">Explorador 3D/globo de contextos</span>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="../georrutas-chile/index.html" rel="noopener">
+                  <span class="link-icon">🛤</span>
+                  <span>
+                    <strong>Georrutas Chile</strong><br>
+                    <span style="font-size:0.75rem;opacity:0.7;">Rutas geoturísticas interactivas</span>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="../apadrina-geositio-chile/index.html" rel="noopener">
+                  <span class="link-icon">🤝</span>
+                  <span>
+                    <strong>Apadrina un Geositio</strong><br>
+                    <span style="font-size:0.75rem;opacity:0.7;">Programa de adopción ciudadana</span>
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="about-card">
+            <h2>Stack técnico</h2>
+            <ul class="refs-list">
+              <li>HTML5 + CSS3 (variables custom, grid, flexbox)</li>
+              <li>JavaScript ES2022 — sin frameworks</li>
+              <li>Chart.js 4 (CDN) — barras + dona</li>
+              <li>Leaflet 1.9 (CDN) — mapa interactivo</li>
+              <li>CartoDB Dark basemap tiles</li>
+              <li>GitHub Pages — despliegue estático</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Scripts ─────────────────────────────────────────── -->
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN2GqcZM=" crossorigin=""></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <!-- App -->
+  <script src="app.js"></script>
+</body>
+</html>
