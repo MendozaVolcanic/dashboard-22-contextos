@@ -95,3 +95,21 @@ JSON, el punto único a tocar es `cargarDatos()`.
 
 Dudas de contexto o de dónde salió cada decisión: revisar el historial de commits y las
 notas en `contextos-geologicos/docs/notas/`. Es el repo donde está todo el razonamiento.
+
+## Pendientes de la auditoría de código
+
+Auditoría del 2026-08-24 con seis revisores. Informe completo en el repo maestro:
+[`contextos-geologicos/reviews/code-review/`](https://github.com/MendozaVolcanic/contextos-geologicos/blob/main/reviews/code-review/2026-08-24_CODE-REVIEW-REPORT.md).
+
+**Ya corregido:** el hash SRI de Leaflet que impedía cargar el mapa, y los 22 nombres de contexto que estaban inventados (ver §2).
+
+**Abierto — decisión de arquitectura, no urgente.** Los tres dashboards de la Suite
+comparten utilidades casi idénticas (helper de creación de nodos, manejo de pestañas, carga
+de datos, render de tablas y mapas). Un revisor lo marcó como crítico y **se rebajó a
+menor** por una razón concreta: son tres repos independientes, cada uno con su propio
+deploy a GitHub Pages. Compartir código entre ellos exigiría submodules de git o servir un
+`shared.js` desde un CDN, y ese acoplamiento entre repos con ciclos de vida separados es
+peor problema que la duplicación actual. Si algún día se consolidan en un solo repo con
+tres carpetas, ahí sí conviene extraer el núcleo común.
+
+Ninguno de los tres proyectos tiene linters ni tests configurados.
