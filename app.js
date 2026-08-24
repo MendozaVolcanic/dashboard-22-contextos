@@ -7,6 +7,7 @@
 
 // ── Estado global ──────────────────────────────────────────
 const state = {
+  meta: null,
   datos: [],
   filtrados: [],
   sortCol: null,
@@ -67,7 +68,21 @@ async function cargarDatos() {
   try {
     const res = await fetch('data/contextos.json');
     if (!res.ok) throw new Error('No se pudo cargar contextos.json');
-    state.datos = await res.json();
+    const doc = await res.json();
+
+    // v2.0.0: el JSON pasó de ser un array plano a {_meta, contextos}.
+    // Los campos con sufijo _estimado(a) no tienen fuente documentada; se
+    // exponen con los nombres antiguos para no romper tabla/gráficos/mapa,
+    // pero quedan marcados como no validados en la UI.
+    const filas = Array.isArray(doc) ? doc : doc.contextos;
+    state.meta  = Array.isArray(doc) ? null : doc._meta;
+
+    state.datos = filas.map(c => ({
+      ...c,
+      region:    c.region_estimada    ?? c.region,
+      geositios: c.geositios_estimados ?? c.geositios,
+      estado:    c.estado_estimado    ?? c.estado,
+    }));
     state.filtrados = [...state.datos];
   } catch (err) {
     console.error(err);
